@@ -156,14 +156,19 @@ function omdb_api_settings_page() {
 }
 
 /**
- * Add a custom tab to the WooCommerce My Account menu.
+ * Add the OMDB tab to  My Account menu.
  *
  * @param array $items Existing menu items.
  * @return array Modified menu items.
  */
 function custom_my_account_add_tab( $items ) {
-    $items['omdb_tab'] = __('OMDB Tab', 'saucal-test');
-    return $items;
+	$new_tab = array( 'omdb_tab' => __('OMDB Tab', 'saucal-test') );    
+
+	 $logout_link = array_pop($items);
+	 $items = array_merge($items, $new_tab);
+	 $items['logout'] = $logout_link;
+ 
+	 return $items;
 }
 add_filter('woocommerce_account_menu_items', 'custom_my_account_add_tab');
 
@@ -176,7 +181,7 @@ function omdb_tab_add_my_account_endpoint() {
 add_action('init', 'omdb_tab_add_my_account_endpoint');
 
 /**
- * Display the content for the custom tab using a custom template.
+ * Display the content from a custom template page.
  */
 function omdb_tab_my_account_endpoint_content() {
     $template = plugin_dir_path(__FILE__) . 'templates/omdb-tab-template.php';
