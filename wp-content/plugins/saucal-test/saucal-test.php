@@ -80,3 +80,75 @@ function run_saucal_test() {
 
 }
 run_saucal_test();
+
+// Add the admin menu item
+function omdb_api_add_admin_menu() {
+    add_menu_page(
+        'Saucal Test Settings',       // Page title
+        'OMDB API',                // Menu title
+        'manage_options',             // Capability
+        'omdb-api-settings',       // Menu slug
+        'omdb_api_settings_page',  // Callback function
+        'dashicons-format-video',     // Icon URL
+        20                            // Position (20 ensures it is among the top level)
+    );
+}
+add_action( 'admin_menu', 'omdb_api_add_admin_menu' );
+
+// Register settings
+function omdb_api_register_settings() {
+    register_setting( 'omdb_api_settings_group', 'omdb_api_key' );
+    register_setting( 'omdb_api_settings_group', 'omdb_api_base_url' );
+
+    add_settings_section(
+        'omdb_api_settings_section',
+        'OMDB API Settings',
+        null,
+        'omdb-api-settings'
+    );
+
+    add_settings_field(
+        'omdb_api_key',
+        'API Key',
+        'omdb_api_api_key_field_cb',
+        'omdb-api-settings',
+        'omdb_api_settings_section'
+    );
+
+    add_settings_field(
+        'omdb_api_base_url',
+        'API Base URL',
+        'omdb_api_api_base_url_field_cb',
+        'omdb-api-settings',
+        'omdb_api_settings_section'
+    );
+}
+add_action( 'admin_init', 'omdb_api_register_settings' );
+
+// Callback functions for settings fields
+function omdb_api_api_key_field_cb() {
+    $api_key = get_option( 'omdb_api_key' );
+    echo '<input type="password" name="omdb_api_key" value="' . esc_attr( $api_key ) . '" class="api-input">';
+}
+
+function omdb_api_api_base_url_field_cb() {
+    $api_base_url = get_option( 'omdb_api_base_url' );
+    echo '<input type="text" name="omdb_api_base_url" value="' . esc_attr( $api_base_url ) . '" class="api-input">';
+}
+
+// Display the settings page
+function omdb_api_settings_page() {
+    ?>
+    <div class="wrap">
+        <h1>OMDB API</h1>
+        <form method="post" action="options.php">
+            <?php
+            settings_fields( 'omdb_api_settings_group' );
+            do_settings_sections( 'omdb-api-settings' );
+            submit_button();
+            ?>
+        </form>
+    </div>
+    <?php
+}
+
