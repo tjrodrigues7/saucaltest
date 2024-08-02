@@ -159,6 +159,8 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
-*.php text eol=lf
-*.txt text eol=lf
+* text=auto
 *.sh text eol=lf
+*.php text eol=lf
+*.js text eol=lf
+*.css text eol=lf
