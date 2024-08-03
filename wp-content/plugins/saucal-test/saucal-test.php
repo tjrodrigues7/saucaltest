@@ -194,5 +194,78 @@ function omdb_tab_my_account_endpoint_content() {
 }
 add_action('woocommerce_account_omdb_tab_endpoint', 'omdb_tab_my_account_endpoint_content');
 
+// Register OMDB widget area
+function omdb_tab_widget_area() {
+    register_sidebar( array(
+        'name'          => __( 'OMDB Tab Area', 'saucal-test' ),
+        'id'            => 'omdb-tab-area',
+        'description'   => __( 'A custom widget area for the OMDB tab.', 'saucal-test' ),
+        'before_widget' => '<div class="omdb-tab-widget">',
+        'after_widget'  => '</div>',
+        'before_title'  => '<h3 class="omdb-tab-widget-title">',
+        'after_title'   => '</h3>',
+    ) );
+}
+add_action( 'widgets_init', 'omdb_tab_widget_area' );
+
+// Register the search widget
+function custom_register_omdb_search_widget() {
+    register_widget( 'OMDB_Search_Widget' );
+}
+add_action( 'widgets_init', 'custom_register_omdb_search_widget' );
+
+// Define the custom widget class
+class OMDB_Search_Widget extends WP_Widget {
+
+    public function __construct() {
+        parent::__construct(
+            'OMDB_Search_Widget', 
+            'OMDB Search Widget', 
+            array( 'description' => __( 'A OMDB search widget', 'text_domain' ), )
+        );
+    }
+
+    // Frontend display of widget
+    public function widget( $args, $instance ) {
+        echo $args['before_widget'];
+
+        if ( ! empty( $instance['title'] ) ) {
+            echo $args['before_title'] . apply_filters( 'widget_title', $instance['title'] ) . $args['after_title'];
+        }
+
+        // Output the widget content
+        echo'<div class="omdb-search">
+				<input id="title" type="text" class="omdb-search-input" placeholder="Title">
+				<input id="year" type="text" class="omdb-search-input" placeholder="Year">
+				<select id="plot" class="omdb-search-input">
+					<option value="short" selected>Short</option>
+					<option value="full">Full</option>
+				</select>
+				<button id="search" class="omdb-search-btn">Search</button>
+			</div>';
+
+        echo $args['after_widget'];
+    }
+
+    // Backend widget form
+    public function form( $instance ) {
+        $title = ! empty( $instance['title'] ) ? $instance['title'] : __( 'New title', 'text_domain' ); ?>
+        <p>
+        <label for="<?php echo esc_attr( $this->get_field_id( 'title' ) ); ?>"><?php esc_attr_e( 'Title:', 'text_domain' ); ?></label> 
+        <input class="widefat" id="<?php echo esc_attr( $this->get_field_id( 'title' ) ); ?>" name="<?php echo esc_attr( $this->get_field_name( 'title' ) ); ?>" type="text" value="<?php echo esc_attr( $title ); ?>">
+        </p>
+        <?php 
+    }
+
+    // Sanitize widget form values as they are saved
+    public function update( $new_instance, $old_instance ) {
+        $instance = array();
+        $instance['title'] = ( ! empty( $new_instance['title'] ) ) ? strip_tags( $new_instance['title'] ) : '';
+
+        return $instance;
+    }
+}
+
+
 
 
