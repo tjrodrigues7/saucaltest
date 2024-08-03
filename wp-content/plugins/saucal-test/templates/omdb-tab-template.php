@@ -9,8 +9,13 @@
 
 <div class="omdb-tab-content">
     <h2><?php _e('OMDB Tab', 'saucal-test'); ?></h2>
-    <p><?php _e('This is the content of the OMDB tab you added to the My Account page.', 'saucal-test'); ?></p>
-    <!-- Add more custom content or logic here -->
+
+    <?php 
+        if ( is_active_sidebar( 'omdb-tab-area' ) ) {
+            dynamic_sidebar( 'omdb-tab-area' );
+        } 
+    ?>
+
 </div>
 
 <?php
