@@ -84,6 +84,27 @@ function run_saucal_test() {
 }
 run_saucal_test();
 
+// Enqueue script and localize data
+function saucal_test_enqueue_scripts() {
+    wp_enqueue_script('saucal-test-public'); // Ensure the script is enqueued
+    wp_localize_script('saucal-test-public', 'wpApiSettings', array(
+        'root' => esc_url_raw(rest_url()),
+        'nonce' => wp_create_nonce('wp_rest'),
+    ));
+}
+add_action('wp_enqueue_scripts', 'saucal_test_enqueue_scripts');
+
+// Register REST API methods
+function register_omdb_rest_routes() {
+    register_rest_route('omdb/v1', '/omdb-search', array(
+        'methods' => 'POST',
+        'callback' => 'handle_omdb_search',
+        'permission_callback' => '__return_true',
+    ));
+}
+add_action('rest_api_init', 'register_omdb_rest_routes');
+
+
 // Add the OMDB API menu item
 function omdb_api_add_admin_menu() {
     add_menu_page(
@@ -216,7 +237,7 @@ add_action( 'widgets_init', 'custom_register_omdb_search_widget' );
 
 // Define the custom widget class
 class OMDB_Search_Widget extends WP_Widget {
-
+	
     public function __construct() {
         parent::__construct(
             'OMDB_Search_Widget', 
@@ -232,16 +253,22 @@ class OMDB_Search_Widget extends WP_Widget {
         if ( ! empty( $instance['title'] ) ) {
             echo $args['before_title'] . apply_filters( 'widget_title', $instance['title'] ) . $args['after_title'];
         }
-
+		
         // Output the widget content
         echo'<div class="omdb-search">
-				<input id="title" type="text" class="omdb-search-input" placeholder="Title">
-				<input id="year" type="text" class="omdb-search-input" placeholder="Year">
-				<select id="plot" class="omdb-search-input">
-					<option value="short" selected>Short</option>
-					<option value="full">Full</option>
-				</select>
-				<button id="search" class="omdb-search-btn">Search</button>
+				<form id="omdb-search-form" name="omdb-search" action="" method="post">
+					<input name="title" type="text" class="omdb-search-input" placeholder="Title" required>
+					<input name="year" type="text" class="omdb-search-input" placeholder="Year">
+					<select name="plot" class="omdb-search-input">
+						<option value="short" selected>Short plot</option>
+						<option value="full">Full plot</option>
+					</select>
+					<input id="omdb-search-btn" type="submit" value="Search" class="omdb-search-btn">
+        			<img class="ajax-loader" src="/wp-content/uploads/2024/08/Fading-circles.gif" width="50" height="18"/>
+				</form>
+			</div>
+			<div id="omdb-results" class="omdb-results">
+			
 			</div>';
 
         echo $args['after_widget'];
@@ -264,6 +291,88 @@ class OMDB_Search_Widget extends WP_Widget {
 
         return $instance;
     }
+}
+
+//Search content on the OMDB database
+function handle_omdb_search($request) {
+    $params = $request->get_params();
+    $title = sanitize_text_field($params['title']);
+    $year = sanitize_text_field($params['year']);
+    $plot = sanitize_text_field($params['plot']);
+    $user_id = get_current_user_id(); // Get the current user ID
+
+    $omdb_api_key = get_option('omdb_api_key'); // API key
+    $omdb_api_base_url = get_option('omdb_api_base_url'); // API endpoint
+
+    if (empty($omdb_api_key) || empty($omdb_api_base_url)) {
+        return new WP_REST_Response(['error' => 'API settings are not configured.'], 400);
+    }
+
+    //cache key based on user ID and search parameters
+    $cache_key = 'omdb_search_' . $user_id . '_' . md5($title . $year . $plot);
+    $cached_result = get_transient($cache_key);
+
+    if ($cached_result !== false) {
+        return new WP_REST_Response([
+            'message' => 'Results from cache',
+            'results' => $cached_result,
+            'status' => 200,
+            'cached' => true
+        ], 200);
+    }
+
+    //API structure
+    $api_url = add_query_arg([
+        'apikey' => $omdb_api_key,
+        't' => $title,
+        'y' => $year,
+        'plot' => $plot
+    ], $omdb_api_base_url);
+
+    //API request
+    $response = wp_remote_get($api_url);
+
+    if (is_wp_error($response)) {
+        return new WP_REST_Response(['error' => $response->get_error_message()], 500);
+    }
+
+    $body = wp_remote_retrieve_body($response);
+    $data = json_decode($body, true);
+
+    if ($data['Response'] === 'False') {
+        return new WP_REST_Response(['error' => $data['Error']], 404);
+    }
+
+    // Extract api results
+    $results = array(
+        'Title' => $data['Title'],
+        'Year' => $data['Year'],
+        'Rated' => $data['Rated'],
+        'Released' => $data['Released'],
+        'Runtime' => $data['Runtime'],
+        'Genre' => $data['Genre'],
+        'Director' => $data['Director'],
+        'Writer' => $data['Writer'],
+        'Actors' => $data['Actors'],
+        'Plot' => $data['Plot'],
+        'Language' => $data['Language'],
+        'Country' => $data['Country'],
+        'Awards' => $data['Awards'],
+        'Poster' => $data['Poster'],
+        'imdbRating' => $data['imdbRating'],
+        'Type' => $data['Type'],
+        'BoxOffice' => $data['BoxOffice'],
+    );
+
+    // Save the result to cache for 4 hour (14400 seconds)
+    set_transient($cache_key, $results, 14400);
+
+    return new WP_REST_Response([
+        'message' => 'Search completed',
+        'results' => $results,
+        'status' => 200,
+        'cached' => false
+    ], 200);
 }
 
 
