@@ -3,6 +3,10 @@
  * included in this file.
  */
 
+header.entry-header h1, .storefront-breadcrumb {
+    display: none;
+}
+
 .omdb-search-input {
     height: 46px;
     margin-right: 20px;
@@ -16,13 +20,28 @@
 }
 
 .omdb-search-btn{
-    background-color: #7f54b3;
-    border-color: #7f54b3;
-    color:#fff;
+    background-color: #7f54b3!important;
+    border-color: #7f54b3!important;;
+    color:#fff!important;;
 }
 
 .omdb-search-btn:hover{
-    background-color:#9665d2;
-    border-color:#9665d2;
-    color:#fff;
+    background-color:#9665d2!important;;
+    border-color:#9665d2!important;;
+    color:#fff!important;;
 }
+
+input[type=submit]:disabled{
+    display: inline-block!important;
+}
+
+img.ajax-loader {
+    display: none;
+    margin-top: 20px;
+}
+
+div.omdb-results span {
+    display: block;
+}
+
+
